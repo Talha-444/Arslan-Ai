@@ -1,68 +1,106 @@
-// 💥 Anti-Clone Security Check
+// 🔒 ULTRA PRO MAX SECURITY SYSTEM
 const fs = require("fs");
+const crypto = require("crypto");
 
+// 🔐 Anti-Tamper & Clone Protection
 const botName = "Arslan-MD";
 const ownerNumber = "923237045919";
+const securityHash = "a1b2c3d4e5f6g7h8i9j0"; // Change this to your unique hash
 
-// 🚫 Block if tampered
+// 🚨 Security Check
 if (__filename.includes('node_modules') === false) {
     const currentFile = fs.readFileSync(__filename, "utf8");
-    if (!currentFile.includes(botName) || !currentFile.includes(ownerNumber)) {
+    const fileHash = crypto.createHash('sha256').update(currentFile).digest('hex');
+    
+    if (!currentFile.includes(botName) || !currentFile.includes(ownerNumber) || 
+        !currentFile.includes(securityHash)) {
         console.log(`
-🚨 Unauthorized Clone Detected!
-
-Bot settings have been modified.
-Original Bot Name: ${botName}
-Original Owner: ${ownerNumber}
-
-❌ Shutting down...
+╔══════════════════════════════════╗
+║   🚨 UNAUTHORIZED ACCESS ALERT   ║
+╠══════════════════════════════════╣
+║                                  ║
+║  Bot Security Violation Detected ║
+║  Original Owner: ${ownerNumber}  ║
+║  Current Hash: ${fileHash.slice(0, 12)}... ║
+║                                  ║
+║  ❌ SYSTEM SHUTDOWN INITIATED    ║
+╚══════════════════════════════════╝
         `);
         process.exit(1);
     }
 }
+
+// ⚡ ULTRA PRO MAX SETTINGS
 const settings = {
-  // 🤖 Identity & Branding
-  botName: "Arslan-MD",
-  packname: "Arslan-MD Pack",
+  // 🌟 Branding & Identity
+  botName: "Arslan-MD ULTRA PRO MAX",
+  packname: "Arslan-MD Premium Pack",
   author: "ArslanMD Official",
-
-  // 👑 Owner Info
+  version: "3.0.0", // Major version upgrade
+  
+  // 👑 Ownership
   botOwner: "ArslanMD",
-  ownerNumber: "923237045919", // No + or spaces
-
-  // ⚙️ Mode & Compatibility (Old + New)
-  commandMode: "public",   // ✅ legacy support
-  MODE: "public",          // ✅ modern standard
-
-  // 🔁 Toggles
-  autoreact: true,         // ✅ auto reaction
-  autotyping: false,
-  autokick: false,
-  chatbot: false,
-  welcome: true,
-  goodbye: true,
-  antilink: false,
-  AUTO_REPLY: 'true',  // ✅ hona chahiye string, na ke boolean
-
-  // 🔐 API Keys & Media
+  ownerNumber: "923237045919",
+  coOwners: [], // Add secondary owners if needed
+  
+  // ⚙️ Operation Modes
+  MODE: "public", // public/private/group-only
+  commandMode: "public", // Legacy support
+  
+  // 💎 Premium Features
+  autoreact: {
+    status: true,
+    emoji: "❤️", // Default reaction
+    whitelist: [] // Numbers to always react to
+  },
+  
+  autoReply: {
+    status: true,
+    message: "🤖 Arslan-MD is currently busy. I'll reply soon!"
+  },
+  
+  // 🔐 Security
+  antiSpam: true,
+  antiVirusScan: true,
+  maxCommandUsage: 30, // Commands per minute limit
+  
+  // 🌐 APIs
   giphyApiKey: "qnl7ssQChTdPjsKta2Ax2LMaGXz303tq",
-  openaiKey: "sk-xxxx",         // optional
-  removeBgKey: "xxxxxx",        // optional
-  menuGif: "ArslanMedia/media/menu.mp4",
-  welcomeAudio: "ArslanMedia/audio/welcome.mp3",
-
-  // 🌐 Metadata
-  description: "🔥 The Most Powerful WhatsApp Bot by ArslanMD.",
-  version: "2.0.2",             // ✅ for all commands
-  website: "https://github.com/Arslan-MD/Arslan-MD",
-  ytchannel: "https://youtube.com/@ArslanMD",
-  repo: "https://github.com/Arslan-MD/Arslan-MD",
-
-  // 🗣️ Voice Option (future)
-  botVoice: "en-US-Wavenet-D"
+  openaiKey: "sk-proj-xxxxxxxxxxxxxxxx", // New format
+  removeBgKey: "rmbg-xxxxxxxxxxxx",
+  
+  // 🎨 Media
+  menuMedia: {
+    image: "ArslanMedia/media/menu.jpg",
+    video: "ArslanMedia/media/menu.mp4",
+    gif: "ArslanMedia/media/menu.gif"
+  },
+  
+  // 📊 Analytics
+  analytics: true,
+  errorReporting: true,
+  
+  // 🌍 Metadata
+  description: "⚡ The Most Advanced WhatsApp Bot with ULTRA PRO MAX Features",
+  website: "https://arslan-md.com",
+  ytchannel: "https://youtube.com/@ArslanMDOfficial",
+  repo: "https://github.com/Arslan-MD/Arslan-Ai",
+  
+  // 🔄 System
+  autoUpdate: true,
+  backupInterval: 24, // Hours
+  maxLogSize: 50 // MB
 };
 
-// ✅ Backward Compatibility Support
-settings.MODE = settings.MODE || settings.commandMode;
+// 💻 Developer Options
+settings.devMode = false;
+settings.debugLevel = "error"; // error/warning/info/debug
+
+// 🛡️ Security Enhancements
+settings.securityHash = securityHash;
+settings.encryptionKey = "ultrapro-max-secure-key"; // For sensitive data
+
+// ✅ Backward Compatibility
+settings.commandMode = settings.MODE;
 
 module.exports = settings;

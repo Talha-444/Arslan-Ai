@@ -11,7 +11,7 @@ function formatUptime(seconds) {
 
 async function aliveCommand(sock, chatId, message) {
     try {
-        const botName = global.botname || 'Arslan-MD';
+        const botName = global.botname || 'Arslan-Ai';
         const version = global.version || '2.0.2';
         const owner = global.botOwner || 'ArslanMD';
         const mode = global.commandMode || 'public';
@@ -49,7 +49,7 @@ async function aliveCommand(sock, chatId, message) {
                     index: 3,
                     urlButton: {
                         displayText: '🌐 GitHub Repo',
-                        url: 'https://github.com/Arslan-MD/Arslan-MD'
+                        url: 'https://github.com/Arslan-MD/Arslan-Ai'
                     }
                 }
             ]

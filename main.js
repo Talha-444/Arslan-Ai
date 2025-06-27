@@ -88,7 +88,7 @@ const songCommand = require('./commands/song');
 const aiCommand = require('./commands/ai');
 const { handleTranslateCommand } = require('./commands/translate');
 const { handleSsCommand } = require('./commands/ss');
-const { addCommandReaction, handleAreactCommand } = require('./lib/reactions');
+const { handleCommand } = require('./lib/reactions');
 const { goodnightCommand } = require('./commands/goodnight');
 const { shayariCommand } = require('./commands/shayari');
 const { rosedayCommand } = require('./commands/roseday');
@@ -122,12 +122,8 @@ async function handleMessages(sock, messageUpdate, printLog) {
         const message = messages[0];
         if (!message?.message) return;
 
-        // Store message for antidelete feature
-        if (message.message) {
-            storeMessage(message);
-        }
+        storeMessage(message);
 
-        // Handle message revocation
         if (message.message?.protocolMessage?.type === 0) {
             await handleMessageRevocation(sock, message);
             return;
@@ -142,27 +138,20 @@ async function handleMessages(sock, messageUpdate, printLog) {
             message.message?.extendedTextMessage?.text?.trim().toLowerCase() || '';
         userMessage = userMessage.replace(/\.\s+/g, '.').trim();
 
-        // Preserve raw message for commands like .tag that need original casing
         const rawText = message.message?.conversation?.trim() ||
             message.message?.extendedTextMessage?.text?.trim() || '';
 
-        // Only log command usage
         if (userMessage.startsWith('.')) {
             console.log(`📝 Command used in ${isGroup ? 'group' : 'private'}: ${userMessage}`);
         }
-        
-        // Auto-react on ALL messages (groups + private)
-        if (!message.key.fromMe) { // Bot khud ke messages pe react nahi karega
-        const emojis = ["❤️", "😂", "👍", "🎉"]; // Apne pasand ke emojis daalo
-        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-        await sock.sendMessage(chatId, {
-        react: {
-            text: randomEmoji,
-            key: message.key
-        }
-    });
+
+        // ✅ Auto-reaction
+        if (userMessage.startsWith('.autoreact') || userMessage.startsWith('.areact')) {
+    const isOwner = message.key.fromMe;
+    await handleCommand(sock, chatId, message, isOwner);
 }
 
+        // ... rest of your code
         // Check if user is banned (skip ban check for unban command)
         if (isBanned(senderId) && !userMessage.startsWith('.unban')) {
             // Only respond occasionally to avoid spam
@@ -839,15 +828,6 @@ async function handleGroupParticipantUpdate(sock, update) {
     try {
         const { id, participants, action, author } = update;
 
-        // Debug log for group updates
-        /* console.log('Group Update in Main:', {
-             id,
-             participants,
-             action,
-             author
-         });*/
-
-        // Check if it's a group
         if (!id.endsWith('@g.us')) return;
 
         // Handle promotion events
@@ -864,16 +844,13 @@ async function handleGroupParticipantUpdate(sock, update) {
 
         // Handle join events
         if (action === 'add') {
-            // Check if welcome is enabled for this group
             const isWelcomeEnabled = await isWelcomeOn(id);
             if (!isWelcomeEnabled) return;
 
-            // Get welcome message from data
             const data = JSON.parse(fs.readFileSync('./data/userGroupData.json'));
             const welcomeData = data.welcome[id];
             const welcomeMessage = welcomeData?.message || 'Welcome {user} to the group! 🎉';
 
-            // Send welcome message for each new participant
             for (const participant of participants) {
                 const user = participant.split('@')[0];
                 const formattedMessage = welcomeMessage.replace('{user}', `@${user}`);
@@ -887,16 +864,13 @@ async function handleGroupParticipantUpdate(sock, update) {
 
         // Handle leave events
         if (action === 'remove') {
-            // Check if goodbye is enabled for this group
             const isGoodbyeEnabled = await isGoodByeOn(id);
             if (!isGoodbyeEnabled) return;
 
-            // Get goodbye message from data
             const data = JSON.parse(fs.readFileSync('./data/userGroupData.json'));
             const goodbyeData = data.goodbye[id];
             const goodbyeMessage = goodbyeData?.message || 'Goodbye {user} 👋';
 
-            // Send goodbye message for each leaving participant
             for (const participant of participants) {
                 const user = participant.split('@')[0];
                 const formattedMessage = goodbyeMessage.replace('{user}', `@${user}`);
@@ -908,10 +882,9 @@ async function handleGroupParticipantUpdate(sock, update) {
             }
         }
     } catch (error) {
-        console.error('Error in handleGroupParticipantUpdate:', error);
+        console.error('❌ Error in group participant handler:', error.message);
     }
-}
-
+                    }
 // Instead, export the handlers along with handleMessages
 module.exports = {
     handleMessages,

@@ -6,18 +6,40 @@ const configPath = path.join(__dirname, '../data/autoStatus.json');
 
 // 📌 Initialize config if missing
 if (!fs.existsSync(configPath)) {
-    fs.writeFileSync(configPath, JSON.stringify({ 
+    fs.writeFileSync(configPath, JSON.stringify({
         enabled: false,
-        reactEmoji: "❤️", // Default reaction emoji
-        notifyOwner: true, // Notify owner when status is viewed
-        blacklist: [] // Users to ignore
+        reactEmoji: "❤️",
+        notifyOwner: true,
+        blacklist: []
     }, null, 2));
 }
 
-// 🔄 Enhanced Auto Status Command
-async function autoStatusCommand(sock, chatId, msg, args) {
+// 🧠 Safe config loader with fallback
+function loadConfig() {
     try {
-        const isOwner = msg.key.fromMe;
+        const file = fs.readFileSync(configPath);
+        const data = JSON.parse(file);
+        return {
+            enabled: false,
+            reactEmoji: "❤️",
+            notifyOwner: true,
+            blacklist: [],
+            ...data
+        };
+    } catch (err) {
+        console.error("⚠️ Failed to load autoStatus.json:", err.message);
+        return {
+            enabled: false,
+            reactEmoji: "❤️",
+            notifyOwner: true,
+            blacklist: []
+        };
+    }
+}
+
+// 🔄 AutoStatus Command Handler
+async function autoStatusCommand(sock, chatId, msg, isOwner) {
+    try {
         if (!isOwner) {
             return await sock.sendMessage(chatId, {
                 text: '🚫 Only *Bot Owner* can use this command!',
@@ -25,144 +47,100 @@ async function autoStatusCommand(sock, chatId, msg, args) {
             });
         }
 
-        let config = JSON.parse(fs.readFileSync(configPath));
+        const text = msg.message?.conversation || '';
+        const args = text.trim().split(' ').slice(1);
+        let config = loadConfig();
 
-        // Show current settings
-        if (!args || args.length === 0) {
+        // Show settings
+        if (args.length === 0) {
             const status = config.enabled ? '🟢 Enabled' : '🔴 Disabled';
-            const reaction = config.reactEmoji || 'Not set';
+            const reaction = config.reactEmoji || 'None';
             return await sock.sendMessage(chatId, {
-                text: `🧠 *Auto Status Settings*\n\n` +
+                text: `🧠 *AutoStatus Settings*\n\n` +
                       `Status: ${status}\n` +
                       `Reaction: ${reaction}\n` +
                       `Notify Owner: ${config.notifyOwner ? 'Yes' : 'No'}\n` +
-                      `Blacklisted Users: ${config.blacklist.length}\n\n` +
+                      `Blacklisted: ${(config.blacklist || []).length}\n\n` +
                       `📌 Commands:\n` +
-                      `.autostatus on/off - Toggle feature\n` +
-                      `.autostatus react ❤️ - Set reaction emoji\n` +
-                      `.autostatus notify on/off - Toggle owner notifications\n` +
-                      `.autostatus blacklist add/remove @user - Manage blacklist`
+                      `.autostatus on/off\n` +
+                      `.autostatus react ❤️\n` +
+                      `.autostatus notify on/off\n` +
+                      `.autostatus blacklist add/remove @user`
             });
         }
 
-        const subCommand = args[0].toLowerCase();
-        
-        // Toggle main feature
-        if (subCommand === 'on' || subCommand === 'off') {
-            config.enabled = subCommand === 'on';
-            fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-            return await sock.sendMessage(chatId, {
-                text: `✅ *Auto status ${subCommand === 'on' ? 'ENABLED' : 'DISABLED'}!*`,
-                react: { text: subCommand === 'on' ? "✅" : "❌", key: msg.key }
-            });
-        }
-        
-        // Set reaction emoji
-        else if (subCommand === 'react' && args[1]) {
+        const sub = args[0].toLowerCase();
+
+        if (sub === 'on' || sub === 'off') {
+            config.enabled = sub === 'on';
+        } else if (sub === 'react' && args[1]) {
             config.reactEmoji = args[1];
-            fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+        } else if (sub === 'notify' && args[1]) {
+            config.notifyOwner = args[1] === 'on';
+        } else if (sub === 'blacklist' && args[1] && args[2]) {
+            const jid = args[2].replace('@', '') + '@s.whatsapp.net';
+            if (args[1] === 'add') {
+                if (!config.blacklist.includes(jid)) config.blacklist.push(jid);
+            } else if (args[1] === 'remove') {
+                config.blacklist = config.blacklist.filter(x => x !== jid);
+            }
+        } else {
             return await sock.sendMessage(chatId, {
-                text: `🎭 Reaction set to: ${args[1]}`,
-                react: { text: args[1], key: msg.key }
+                text: '❓ Invalid command!\nUse `.autostatus` for help.',
+                react: { text: "❓", key: msg.key }
             });
         }
-        
-        // Toggle owner notifications
-        else if (subCommand === 'notify' && args[1]) {
-            if (args[1] === 'on' || args[1] === 'off') {
-                config.notifyOwner = args[1] === 'on';
-                fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-                return await sock.sendMessage(chatId, {
-                    text: `📢 Owner notifications ${args[1] === 'on' ? 'ENABLED' : 'DISABLED'}`,
-                    react: { text: "🔔", key: msg.key }
-                });
-            }
-        }
-        
-        // Blacklist management
-        else if (subCommand === 'blacklist' && args[1] && args[2]) {
-            const action = args[1].toLowerCase();
-            const userJid = args[2].replace('@', '') + '@s.whatsapp.net';
-            
-            if (action === 'add') {
-                if (!config.blacklist.includes(userJid)) {
-                    config.blacklist.push(userJid);
-                    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-                    return await sock.sendMessage(chatId, {
-                        text: `🚷 Added ${userJid} to blacklist`,
-                        react: { text: "➕", key: msg.key }
-                    });
-                }
-            } 
-            else if (action === 'remove') {
-                config.blacklist = config.blacklist.filter(jid => jid !== userJid);
-                fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-                return await sock.sendMessage(chatId, {
-                    text: `✅ Removed ${userJid} from blacklist`,
-                    react: { text: "➖", key: msg.key }
-                });
-            }
-        }
 
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
         return await sock.sendMessage(chatId, {
-            text: '⚠️ Invalid command! Use `.autostatus` to see all options',
-            react: { text: "❓", key: msg.key }
+            text: `✅ *AutoStatus Updated*`,
+            react: { text: "✅", key: msg.key }
         });
 
-    } catch (error) {
-        console.error('❌ AutoStatus Error:', error);
+    } catch (err) {
+        console.error("❌ AutoStatusCommand Error:", err.message);
         await sock.sendMessage(chatId, {
-            text: `❌ Error: ${error.message}`,
+            text: `❌ Error: ${err.message}`,
             react: { text: "⚠️", key: msg.key }
         });
     }
 }
 
-// 👁️ Enhanced Status Update Handler
+// 👁️ Status Reaction Handler
 async function handleStatusUpdate(sock, status) {
     try {
-        const config = JSON.parse(fs.readFileSync(configPath));
+        const config = loadConfig();
         if (!config.enabled) return;
 
         const key = status.key || status.messages?.[0]?.key;
         if (!key || key.remoteJid !== 'status@broadcast') return;
 
         const sender = key.participant || key.remoteJid;
-        
-        // Check blacklist
-        if (config.blacklist.includes(sender)) {
-            console.log(`⚫ Ignoring blacklisted user: ${sender.split('@')[0]}`);
+
+        if ((config.blacklist || []).includes(sender)) {
+            console.log(`🚫 Ignored blacklisted user: ${sender}`);
             return;
         }
 
-        // View status
-        await new Promise(resolve => setTimeout(resolve, 1000));
         await sock.readMessages([key]);
 
-        // Add reaction if set
         if (config.reactEmoji) {
             await sock.sendMessage(key.remoteJid, {
-                react: { text: config.reactEmoji, key: key }
+                react: { text: config.reactEmoji, key }
             });
         }
 
-        // Notify owner if enabled
         if (config.notifyOwner && sock.user?.id) {
             await sock.sendMessage(sock.user.id, {
-                text: `👁️ Viewed status from: ${sender.split('@')[0]}\n` +
-                      `🕒 ${new Date().toLocaleString()}`
+                text: `👁️ Viewed status from @${sender.split('@')[0]}`,
+                mentions: [sender]
             });
         }
 
-        console.log(`👁️ Viewed + reacted to status from: ${sender.split('@')[0]}`);
+        console.log(`✅ AutoStatus reacted to ${sender}`);
 
     } catch (err) {
-        if (err.message?.includes('rate-overlimit')) {
-            console.warn('⚠️ Rate limit hit! Retrying...');
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            return handleStatusUpdate(sock, status);
-        }
-        console.error('❌ Status Handler Error:', err.message);
+        console.error("❌ handleStatusUpdate Error:", err.message);
     }
 }
 

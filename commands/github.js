@@ -2,10 +2,10 @@ const fs = require('fs');
 const path = require('path');
 
 async function githubCommand(sock, chatId, message) {
-    const repoInfo = `*🤖 Arslan-MD*
+    const repoInfo = `*🤖 Arslan-Ai*
 
 *📂 GitHub Repository:*
-https://github.com/Arslan-MD/Arslan-MD
+https://github.com/Arslan-MD/Arslan-Ai
 
 *📢 Official Channel:*
 https://youtube.com/@arslanmdofficial
